@@ -7,7 +7,7 @@ const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET
 })
 
-const AVATAR_ID = 'c7361404-9954-4927-ae82-cbd0bf21b3f8'
+const AVATAR_ID = 'b7a061e4-8ebe-439e-b21e-437ab4d6781d'
 const VOICE_PRESET = 'morgan'
 
 const START_SCRIPT = `Bonjour... je suis Captain Baage.
