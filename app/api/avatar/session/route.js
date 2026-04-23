@@ -5,21 +5,14 @@ export const maxDuration = 60
 const AVATAR_ID = 'b7a061e4-8ebe-439e-b21e-437ab4d6781d'
 const VOICE_PRESET = 'morgan'
 
-const START_SCRIPT = `Bonjour... je suis Captain Baage.
-Dites-moi juste où vous voulez partir — et je m'occupe du reste.`
+const START_SCRIPT = `Bonjour... je suis Captain Baage. Dites-moi juste ce que vous ressentez — et je m'occupe du reste.`
 
-const PERSONALITY = `Tu es Captain Baage, le génie du voyage de baage.fr.
-Tu parles TOUJOURS en français.
-Tu es charmant, mystérieux, drôle et attentionné.
-Tu poses maximum une question à la fois.
-Ton nom est toujours Captain Baage — jamais traduit.`
+const PERSONALITY = `Tu es Captain Baage, le génie du voyage de baage.fr. Tu parles TOUJOURS en français. Tu es charmant, mystérieux, drôle et attentionné. Tu poses maximum une question à la fois. Ton nom est toujours Captain Baage — jamais traduit.`
 
 export async function POST() {
   try {
     const RunwayML = (await import('@runwayml/sdk')).default
-    const client = new RunwayML({
-      apiKey: process.env.RUNWAYML_API_SECRET,
-    })
+    const client = new RunwayML({ apiKey: process.env.RUNWAYML_API_SECRET })
 
     const { id: sessionId } = await client.realtimeSessions.create({
       model: 'gwm1_avatars',
@@ -30,8 +23,9 @@ export async function POST() {
     })
 
     let sessionKey
-   for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 20; i++) {
       const session = await client.realtimeSessions.retrieve(sessionId)
+      console.log(`Poll ${i} — status: ${session.status}`)
       if (session.status === 'READY') { sessionKey = session.sessionKey; break }
       if (session.status === 'FAILED') {
         return NextResponse.json({ error: 'Session failed' }, { status: 500 })
@@ -54,20 +48,24 @@ export async function POST() {
       }
     )
 
-    const credentials = await consumeResponse.json()
+    const raw = await consumeResponse.text()
+    console.log('Consume raw response:', raw)
+
+    let credentials = {}
+    try { credentials = JSON.parse(raw) } catch(e) {}
+
+    console.log('Credentials keys:', Object.keys(credentials))
 
     return NextResponse.json({
       sessionId,
       serverUrl: credentials.url,
       token: credentials.token,
       roomName: credentials.roomName,
+      debug: credentials,
     })
 
   } catch (error) {
     console.error('Session error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message || 'Failed' }, { status: 500 })
   }
 }
