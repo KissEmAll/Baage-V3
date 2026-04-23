@@ -23,16 +23,15 @@ export async function POST() {
     })
 
     let sessionKey
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 2000))
       const session = await client.realtimeSessions.retrieve(sessionId)
       console.log(`Poll ${i} — status: ${session.status}`)
       if (session.status === 'READY') { sessionKey = session.sessionKey; break }
       if (session.status === 'FAILED') {
         return NextResponse.json({ error: 'Session failed' }, { status: 500 })
       }
-      await new Promise(r => setTimeout(r, 1000))
-    }
-
+      
     if (!sessionKey) {
       return NextResponse.json({ error: 'Session timed out' }, { status: 504 })
     }
