@@ -1,11 +1,4 @@
-// app/api/avatar/session/route.js
-// Crée une session Runway avec Captain Baage + voix Morgan
-
-import RunwayML from '@runwayml/sdk'
-
-const getClient = () => new RunwayML({
-  apiKey: process.env.RUNWAYML_API_SECRET || 'placeholder'
-})
+import { NextResponse } from 'next/server'
 
 const AVATAR_ID = 'b7a061e4-8ebe-439e-b21e-437ab4d6781d'
 const VOICE_PRESET = 'morgan'
@@ -13,51 +6,41 @@ const VOICE_PRESET = 'morgan'
 const START_SCRIPT = `Bonjour... je suis Captain Baage.
 Dites-moi juste ce que vous ressentez — et je m'occupe du reste.`
 
-// Personality courte pour Runway — le vrai cerveau est Claude via RPC
 const PERSONALITY = `Tu es Captain Baage, le génie du voyage de baage.fr.
 Tu parles TOUJOURS en français.
 Tu es charmant, mystérieux, drôle et attentionné.
 Tu poses maximum une question à la fois.
-Ton nom est toujours Captain Baage — jamais traduit.
-Quand tu as besoin de répondre à une question de voyage,
-utilise l'outil get_captain_response pour obtenir la meilleure réponse.`
+Ton nom est toujours Captain Baage — jamais traduit.`
 
-export async function POST(request) {
+export async function POST() {
   try {
-    // 1. Créer la session Runway
+    const RunwayML = (await import('@runwayml/sdk')).default
+    const client = new RunwayML({
+      apiKey: process.env.RUNWAYML_API_SECRET,
+    })
+
     const { id: sessionId } = await client.realtimeSessions.create({
       model: 'gwm1_avatars',
       avatar: { type: 'custom', avatarId: AVATAR_ID },
-      voice: {
-        type: 'runway-live-preset',
-        presetId: VOICE_PRESET,
-      },
+      voice: { type: 'runway-live-preset', presetId: VOICE_PRESET },
       personality: PERSONALITY,
       startScript: START_SCRIPT,
     })
 
-    // 2. Poller jusqu'à READY
     let sessionKey
     for (let i = 0; i < 60; i++) {
-      const session = await getClient().realtimeSessions.retrieve(sessionId)
-      if (session.status === 'READY') {
-        sessionKey = session.sessionKey
-        break
-      }
+      const session = await client.realtimeSessions.retrieve(sessionId)
+      if (session.status === 'READY') { sessionKey = session.sessionKey; break }
       if (session.status === 'FAILED') {
-        return Response.json(
-          { error: 'Session failed: ' + session.failure },
-          { status: 500 }
-        )
+        return NextResponse.json({ error: 'Session failed' }, { status: 500 })
       }
       await new Promise(r => setTimeout(r, 1000))
     }
 
     if (!sessionKey) {
-      return Response.json({ error: 'Session timed out' }, { status: 504 })
+      return NextResponse.json({ error: 'Session timed out' }, { status: 504 })
     }
 
-    // 3. Consommer les credentials WebRTC
     const consumeResponse = await fetch(
       `https://api.dev.runwayml.com/v1/realtime_sessions/${sessionId}/consume`,
       {
@@ -69,14 +52,9 @@ export async function POST(request) {
       }
     )
 
-    if (!consumeResponse.ok) {
-      const error = await consumeResponse.text()
-      return Response.json({ error }, { status: 500 })
-    }
-
     const credentials = await consumeResponse.json()
 
-    return Response.json({
+    return NextResponse.json({
       sessionId,
       serverUrl: credentials.url,
       token: credentials.token,
@@ -85,8 +63,8 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Session error:', error)
-    return Response.json(
-      { error: error.message || 'Failed to create session' },
+    return NextResponse.json(
+      { error: error.message || 'Failed' },
       { status: 500 }
     )
   }
