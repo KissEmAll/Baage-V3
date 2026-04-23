@@ -30,7 +30,7 @@ export async function POST() {
     })
 
     let sessionKey
-    for (let i = 0; i < 60; i++) {
+   for (let i = 0; i < 20; i++) {
       const session = await client.realtimeSessions.retrieve(sessionId)
       if (session.status === 'READY') { sessionKey = session.sessionKey; break }
       if (session.status === 'FAILED') {
