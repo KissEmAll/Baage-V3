@@ -3,8 +3,8 @@
 
 import RunwayML from '@runwayml/sdk'
 
-const client = new RunwayML({
-  apiKey: process.env.RUNWAYML_API_SECRET
+const getClient = () => new RunwayML({
+  apiKey: process.env.RUNWAYML_API_SECRET || 'placeholder'
 })
 
 const AVATAR_ID = 'b7a061e4-8ebe-439e-b21e-437ab4d6781d'
@@ -39,7 +39,7 @@ export async function POST(request) {
     // 2. Poller jusqu'à READY
     let sessionKey
     for (let i = 0; i < 60; i++) {
-      const session = await client.realtimeSessions.retrieve(sessionId)
+      const session = await getClient().realtimeSessions.retrieve(sessionId)
       if (session.status === 'READY') {
         sessionKey = session.sessionKey
         break
