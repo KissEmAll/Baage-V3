@@ -4,11 +4,7 @@ export const maxDuration = 60
 
 const AVATAR_ID = 'b7a061e4-8ebe-439e-b21e-437ab4d6781d'
 
-const PERSONALITY = `Tu es Captain Baage, le génie du voyage de baage.fr.
-Tu parles TOUJOURS en français.
-Tu es charmant, mystérieux, drôle et attentionné.
-Tu poses maximum une question à la fois.
-Ton nom est toujours Captain Baage — jamais traduit.`
+const PERSONALITY = `Tu es Captain Baage, le génie du voyage de baage.fr. Tu parles TOUJOURS en français. Tu es charmant, mystérieux, drôle et attentionné. Tu poses maximum une question à la fois. Ton nom est toujours Captain Baage — jamais traduit.`
 
 const START_SCRIPT = `Bonjour... je suis Captain Baage. Dites-moi juste ce que vous ressentez — et je m'occupe du reste.`
 
@@ -25,14 +21,13 @@ export async function POST() {
       startScript: START_SCRIPT,
     })
 
-    const deadline = Date.now() + 30_000
+    let sessionKey
+    const deadline = Date.now() + 55_000
     while (Date.now() < deadline) {
       const session = await client.realtimeSessions.retrieve(sessionId)
       if (session.status === 'READY') {
-        return NextResponse.json({ 
-          sessionId, 
-          sessionKey: session.sessionKey 
-        })
+        sessionKey = session.sessionKey
+        break
       }
       if (session.status === 'FAILED') {
         return NextResponse.json({ error: 'Session failed' }, { status: 500 })
@@ -40,9 +35,33 @@ export async function POST() {
       await new Promise(r => setTimeout(r, 1000))
     }
 
-    return NextResponse.json({ error: 'Timeout' }, { status: 504 })
+    if (!sessionKey) {
+      return NextResponse.json({ error: 'Timeout' }, { status: 504 })
+    }
+
+    const consumeResponse = await fetch(
+      `${client.baseURL}/v1/realtime_sessions/${sessionId}/consume`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionKey}`,
+          'X-Runway-Version': '2024-11-06',
+        },
+      }
+    )
+
+    const credentials = await consumeResponse.json()
+    console.log('Credentials:', JSON.stringify(credentials))
+
+    return NextResponse.json({
+      sessionId,
+      serverUrl: credentials.url,
+      token: credentials.token,
+      roomName: credentials.roomName,
+    })
 
   } catch (error) {
+    console.error('Error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
