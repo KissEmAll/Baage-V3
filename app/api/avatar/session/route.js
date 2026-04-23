@@ -4,10 +4,6 @@ export const maxDuration = 60
 
 const AVATAR_ID = 'b7a061e4-8ebe-439e-b21e-437ab4d6781d'
 
-const PERSONALITY = `Tu es Captain Baage, le génie du voyage de baage.fr. Tu parles TOUJOURS en français. Tu es charmant, mystérieux, drôle et attentionné. Tu poses maximum une question à la fois. Ton nom est toujours Captain Baage — jamais traduit.`
-
-const START_SCRIPT = `Bonjour... je suis Captain Baage. Dites-moi juste ce que vous ressentez — et je m'occupe du reste.`
-
 export async function POST() {
   try {
     const RunwayML = (await import('@runwayml/sdk')).default
@@ -16,9 +12,6 @@ export async function POST() {
     const { id: sessionId } = await client.realtimeSessions.create({
       model: 'gwm1_avatars',
       avatar: { type: 'custom', avatarId: AVATAR_ID },
-      voice: { type: 'runway-live-preset', presetId: 'morgan' },
-      personality: PERSONALITY,
-      startScript: START_SCRIPT,
     })
 
     let sessionKey
@@ -51,7 +44,6 @@ export async function POST() {
     )
 
     const credentials = await consumeResponse.json()
-    console.log('Credentials:', JSON.stringify(credentials))
 
     return NextResponse.json({
       sessionId,
@@ -61,7 +53,6 @@ export async function POST() {
     })
 
   } catch (error) {
-    console.error('Error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
