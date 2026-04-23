@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
 
+export const maxDuration = 60
+
 const AVATAR_ID = 'b7a061e4-8ebe-439e-b21e-437ab4d6781d'
 const VOICE_PRESET = 'morgan'
 
 const START_SCRIPT = `Bonjour... je suis Captain Baage.
-Dites-moi juste ce que vous ressentez — et je m'occupe du reste.`
+Dites-moi juste où vous voulez partir — et je m'occupe du reste.`
 
 const PERSONALITY = `Tu es Captain Baage, le génie du voyage de baage.fr.
 Tu parles TOUJOURS en français.
